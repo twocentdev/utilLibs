@@ -298,7 +298,7 @@ class Transformer_selector:
         """
         Basic constructor
 
-         Parameters
+        Parameters
         ----------
         _input_file_extension : str
             the extension of the file to be transformed from.
@@ -323,82 +323,213 @@ class Transformer_selector:
         logging.error(f"[{self.__class__.__name__}.select] There is no transformer for this files.")
         return "unknown"
 
-def main():
-    # About to parse params
-    parser = argparse.ArgumentParser(description="This commands allows to easily transforms data from one format files to another. The allowed transformations include: CSV --> JSON.")
-    parser.add_argument("input_file", help="the file or directory where the data is stored.")
-    parser.add_argument("output_file", help="the file or directory where the data will be stored after transforming it.")
-    parser.add_argument("-b", "--batch", help="use this param if wanna transform all files inside a directory to the choosen format (csv, txt, json, etc.).")
-    parser.add_argument("-d", "--delimiter", help="use this param if wanna set a delimiter")
-    parser.add_argument("-o", "--overwrite", action="store_true", help="use this param if wanna allow file overwrite.")
-    parser.add_argument("-v", "--verbose", action="store_true", help="enables detailed logs.")
-    args = parser.parse_args()
 
-    # About to set logger
-    _logging_level = None
-    if args.verbose:
-        _logging_level=logging.DEBUG
-    else:
-        _logging_level=logging.WARN
-    logging.basicConfig(format="%(asctime)s [%(levelname)-5.5s] %(message)s", level=_logging_level)
+class Main:
 
-    logging.debug(f"[Main] Is batch mode enabled?")
-    files = {}
-    if args.batch:
-        if os.path.isdir(args.input_file) and os.path.isdir(args.output_file):
-            logging.debug(f"[Main] Batch mode enabled and both dirs are valid.")
-            for file in os.listdir(args.input_file):
-                from_file = f"{args.input_file}\\{file}"
-                to_file = f"{args.output_file}\\{file[:file.rfind('.')]}.{args.batch}"
-                if not(args.overwrite) and os.path.isfile(to_file):
-                    logging.warning(f"[Main] Overwrite mode is not enabled and {to_file} already exists.")
-                    continue
-                files[from_file] = to_file
-                logging.debug(f"[Main] File {from_file} should be transformed into {files[from_file]} file.")
-        else:
-            logging.critical(f"[Main] Batch mode is enabled but input or output directories do not exist or are not directories.")
-            exit(-1)
-    else: # Batch mode is not enabled
-        if os.path.isfile(args.input_file):
-            logging.debug(f"[Main] Single file mode enabled and input file exists.")
-            files[args.input_file] = args.output_file
-            logging.debug(f"[Main] File {args.input_file} should be transformed into {files[args.input_file]} file.")
-        else:
-            logging.critical(f"[Main] Single file mode is enabled but input file does not exist or is not a file.")
-            exit(-1)
+    def get_args(self):
+        """
+        TODO
+        """
+        parser = argparse.ArgumentParser(
+            description = "This commands allows to easily transforms data from one format files to another. The allowed transformations include: CSV --> JSON.",
+            formatter_class= argparse.ArgumentDefaultsHelpFormatter
+        )
+        parser.add_argument(
+            "input_file",
+            help="the file or directory where the data is stored."
+        )
+        parser.add_argument(
+            "output_file",
+            help="the file or directory where the data will be stored after transforming it."
+        )
+        parser.add_argument(
+            "-b", "--batch",
+            help="use this param if wanna transform all files inside a directory to the choosen format (csv, txt, json, etc.)."
+        )
+        parser.add_argument(
+            "-d", "--delimiter",
+            help="use this param if wanna set a delimiter"
+        )
+        parser.add_argument(
+            "-o", "--overwrite",
+            action="store_true",
+            help="use this param if wanna allow file overwrite."
+        )
+        parser.add_argument(
+            "-v", "--verbose",
+            action="store_true",
+            help="enables detailed logs."
+        )
+        args = parser.parse_args()
+        return args
     
-    logging.debug(f"[Main] About to process file(s).")
-    for file in files:
-        logging.debug(f"[Main] About to transform file {file} into {files[file]}.")
-        input_file_extension = file[file.rfind(".")+1:]
-        output_file_extension = (files[file])[files[file].rfind(".")+1:]
+    def get_batch_files(self, input_path, output_path, format):
+        """
+        Creates a dictionary that contais every input file related to its output file as k, v.
 
-        logging.debug(f"[Main] About to select transformer ({input_file_extension} --> {output_file_extension}).")
-        selector = Transformer_selector(input_file_extension, output_file_extension)
-        transformer_selected = selector.select()
-        logging.debug(f"[Main] The selected transformer is {transformer_selected}.")
+        Parameters
+        ----------
+        input_path : str
+            the full directory path where files are placed.
+        output_path : str
+            the full directory path where files will be placed when transformed.
+        format : str
+            the extension that files will have when transformed.
 
-        logging.debug(f"[Main] About to build transformer_builder.")
-        transformer_builder = None
-        if transformer_selected == "csv_to_json":
-            if args.delimiter:
-                logging.debug(f"[Main] About to process delimiter.")
-                transformer_builder = Delimiter_TransformerBuilder(file, "_temp", args.overwrite, args.delimiter)
-                delimiter_transformer = transformer_builder.build()
-                delimiter_transformer.transform()
-                logging.debug(f"[Main] About to build transformer_builder.")
-                transformer_builder = CSV_to_JSON_TransformerBuilder(delimiter_transformer.getOutputFile(), files[file], args.overwrite)
-            else:
-                logging.debug(f"[Main] About to build transformer_builder.")
-                transformer_builder = CSV_to_JSON_TransformerBuilder(file, files[file], args.overwrite)
+        Returns a dictionary that contains every file in the input path related to the output file as k, v.
+        """
+        files = {}
+        for file in self.get_files_in_directory(input_path):
+            logging.debug(f"[Main] About to get output file for {file}.")
+            from_file = f"{input_path}/{file}"
+            to_file = self.get_output_file_from_input_file(input_path, file, format)
+            files[from_file] = to_file
+        return files
+    
+    def get_files_in_directory(self, path):
+        """
+        TODO
+        """
+        return os.listdir(path)
+    
+    def get_output_file_from_input_file(self, path, input_file, format):
+        filename = input_file[:input_file.rfind('.')]
+        return f"{path}/{filename}.{format}"
+    
+    def set_logging(self, verbose=False):
+        """
+        Sets the basic config for logging, including verbose mode.
+        """
+        if verbose:
+            logging.basicConfig(format="%(asctime)s [%(levelname)-5.5s] %(message)s", level=logging.DEBUG)
         else:
-            logging.warning(f"[Main] There is no transformer available.")
-            continue
-            
-        logging.debug(f"[Main] About to build transformer.")
-        transformer = transformer_builder.build()
-        transformer.transform()
+            logging.basicConfig(format="%(asctime)s [%(levelname)-5.5s] %(message)s", level=logging.WARN)
+
+    def validate_directory_path(self, path):
+        """
+        Check if the directory path exists and is a directory.
+
+        Parameters
+        ----------
+        path : str
+            the full directory path to validate.
+
+        Returns the path if it's valid. It raises an error if not.
+        """
+        if not os.path.exists(path):
+            raise argparse.ArgumentTypeError(f"The directory {path} does not exist.")
+        if not os.path.isdir(path):
+            raise argparse.ArgumentTypeError(f"{path} is not a directory.")
+        return path
+
+    def validate_file_path(self, path):
+        """
+        Check if the file path exists and is a file.
+
+        Parameters
+        ----------
+        path : str
+            the full file path to validate.
+
+        Returns the path if it's valid. It raises an error if not.
+        """
+        if not os.path.exists(path):
+            raise argparse.ArgumentError(f"The file {path} does not exists.")
+        if not os.path.isfile(path):
+            raise argparse.ArgumentTypeError(f"{path} is not a file.")
+        return path
+    
+    def validate_file_path_not_exists(self, path):
+        """
+        Check if the file path does NOT exists. This is used when overwrite mode is disabled.
+
+        Parameters
+        ----------
+        path : str
+            the full file path to validate.
+
+        Returns the path if it's valid (the file does NOT exists). It raises an error if not.
+        """
+        if os.path.exists(path):
+            raise argparse.ArgumentError(f"The file {path} exists.")
+        return path
+
+    def run(self):
+        """
+        TODO
+        """
+        args = self.get_args()
+        self.set_logging(args.verbose)
+
+        files = {}
+        if args.batch:
+            logging.debug(f"[Main] Batch mode is enabled.")
+            files = self.get_batch_files(args.input_file, args.output_file, args.batch)
+        else: # Batch mode is disabled
+            logging.debug(f"[Main] Single file mode is enabled.")
+            files[args.input_file] = args.output_file
+
+        for file in files:
+            print(f"{file} --> {files[file]}")
+
+#        logging.debug(f"[Main] Is batch mode enabled?")
+#        files = {}
+#        if args.batch:
+#            if os.path.isdir(args.input_file) and os.path.isdir(args.output_file):
+#                logging.debug(f"[Main] Batch mode enabled and both dirs are valid.")
+#                for file in os.listdir(args.input_file):
+#                    from_file = f"{args.input_file}\\{file}"
+#                    to_file = f"{args.output_file}\\{file[:file.rfind('.')]}.{args.batch}"
+#                    if not(args.overwrite) and os.path.isfile(to_file):
+#                        logging.warning(f"[Main] Overwrite mode is not enabled and {to_file} already exists.")
+#                        continue
+#                    files[from_file] = to_file
+#                    logging.debug(f"[Main] File {from_file} should be transformed into {files[from_file]} file.")
+#            else:
+#                logging.critical(f"[Main] Batch mode is enabled but input or output directories do not exist or are not directories.")
+#                exit(-1)
+#        else: # Batch mode is not enabled
+#            if os.path.isfile(args.input_file):
+#                logging.debug(f"[Main] Single file mode enabled and input file exists.")
+#                files[args.input_file] = args.output_file
+#                logging.debug(f"[Main] File {args.input_file} should be transformed into {files[args.input_file]} file.")
+#            else:
+#                logging.critical(f"[Main] Single file mode is enabled but input file does not exist or is not a file.")
+#                exit(-1)
+#
+#        logging.debug(f"[Main] About to process file(s).")
+#        for file in files:
+#            logging.debug(f"[Main] About to transform file {file} into {files[file]}.")
+#            input_file_extension = file[file.rfind(".")+1:]
+#            output_file_extension = (files[file])[files[file].rfind(".")+1:]
+#
+#            logging.debug(f"[Main] About to select transformer ({input_file_extension} --> {output_file_extension}).")
+#            selector = Transformer_selector(input_file_extension, output_file_extension)
+#            transformer_selected = selector.select()
+#            logging.debug(f"[Main] The selected transformer is {transformer_selected}.")
+#
+#            logging.debug(f"[Main] About to build transformer_builder.")
+#            transformer_builder = None
+#            if transformer_selected == "csv_to_json":
+#                if args.delimiter:
+#                    logging.debug(f"[Main] About to process delimiter.")
+#                    transformer_builder = Delimiter_TransformerBuilder(file, "_temp", args.overwrite, args.delimiter)
+#                    delimiter_transformer = transformer_builder.build()
+#                    delimiter_transformer.transform()
+#                    logging.debug(f"[Main] About to build transformer_builder.")
+#                    transformer_builder = CSV_to_JSON_TransformerBuilder(delimiter_transformer.getOutputFile(), files[file], args.overwrite)
+#                else:
+#                    logging.debug(f"[Main] About to build transformer_builder.")
+#                    transformer_builder = CSV_to_JSON_TransformerBuilder(file, files[file], args.overwrite)
+#            else:
+#                logging.warning(f"[Main] There is no transformer available.")
+#                continue
+#
+#            logging.debug(f"[Main] About to build transformer.")
+#            transformer = transformer_builder.build()
+#            transformer.transform()
 
 
 if __name__ == "__main__":
-    main()
+    app = Main()
+    app.run()
