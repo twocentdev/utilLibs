@@ -17,8 +17,6 @@ class Transformer(ABC):
         the full path for the file where the data is serialized.
     _output_file : str
         the full path for the file where the data, when transformed, will be serialized.
-    _overwrite : boolean
-        if true, the output file can be overwrited with new data.
 
     Methods
     -------
@@ -28,14 +26,11 @@ class Transformer(ABC):
     getOutputFile() : str
         returns the output file.
 
-    getOverwrite() : str
-        returns true if overwrite is allowed, false in other case.
-
     csv_to_json() : None
         transforms the data serialized in the input file and saves into the output file.
     """
 
-    def __init__(self, input_file, output_file, overwrite=False):
+    def __init__(self, input_file, output_file):
         """
         Basic constructor
 
@@ -45,13 +40,10 @@ class Transformer(ABC):
             the full path for the file where the data is serialized.
         _output_file : str
             the full path for the file where the data, when transformed, will be serialized.
-        _overwrite : boolean
-            if true, the output file can be overwrited with new data.
         """
-        logging.debug(f"[{self.__class__.__name__}] About to create CSV_to_JSON_Transformer --> input_file: {input_file}, output_file: {output_file}, overwrite: {overwrite}.")
+        logging.debug(f"[{self.__class__.__name__}] About to create CSV_to_JSON_Transformer --> input_file: {input_file}, output_file: {output_file}.")
         self._input_file = input_file
         self._output_file = output_file
-        self._overwrite = overwrite
 
     def getInputFile(self):
         """
@@ -70,15 +62,6 @@ class Transformer(ABC):
         """
         logging.info(f"[{self.__class__.__name__}.getOutputFile] output_file: {self._output_file}")
         return self._output_file
-
-    def getOverwrite(self):
-        """
-        Getter for attribute _overwrite.
-
-        Returns true if overwriting output file is allowed, false in other case.
-        """
-        logging.info(f"[{self.__class__.__name__}.getOverwrite] overwrite: {self._overwrite}")
-        return self._overwrite
 
     @abstractmethod
     def transform(self):
@@ -121,7 +104,7 @@ class Delimiter_Transformer(Transformer):
     This transformer receives a CSV file replaces its delimiter to ','. This is required because CSV_to_JSON_Transformer ONLY allows ',' as delimiter.
     """
 
-    def __init__(self, input_file, output_file, overwrite=False, delimiter = ","):
+    def __init__(self, input_file, output_file, delimiter = ","):
         """
         Basic constructor
 
@@ -131,13 +114,10 @@ class Delimiter_Transformer(Transformer):
             the full path for the file where the data is serialized.
         _output_file : str
             the full path for the file where the data, when transformed, will be serialized.
-        _overwrite : boolean
-            if true, the output file can be overwrited with new data.
         """
-        logging.debug(f"[{self.__class__.__name__}] About to create CSV_to_JSON_Transformer --> input_file: {input_file}, output_file: {output_file}, overwrite: {overwrite}.")
+        logging.debug(f"[{self.__class__.__name__}] About to create CSV_to_JSON_Transformer --> input_file: {input_file}, output_file: {output_file}.")
         self._input_file = input_file
         self._output_file = output_file
-        self._overwrite = overwrite
         self._delimiter = delimiter 
 
     def transform(self):
@@ -162,8 +142,6 @@ class TransformerBuilder(ABC):
         the full path for the file where the data is serialized.
     _output_file : str
         the full path for the file where the data, when transformed, will be serialized.
-    _overwrite : boolean
-        if true, the output file can be overwrited with new data.
 
     Methods
     -------
@@ -173,14 +151,11 @@ class TransformerBuilder(ABC):
     getOutputFile() : str
         returns the output file.
 
-    getOverwrite() : str
-        returns true if overwrite is allowed, false in other case.
-
     build() : Transformer
         returns a single Transformer
     """
 
-    def __init__(self, input_file, output_file, overwrite=False):
+    def __init__(self, input_file, output_file):
         """
         Basic constructor
 
@@ -190,17 +165,11 @@ class TransformerBuilder(ABC):
             the full path for the file where the data is serialized.
         _output_file : str
             the full path for the file where the data, when transformed, will be serialized.
-        _overwrite : boolean
-            if true, the output file can be overwrited with new data.
         """
         logging.debug(
-            f"[{self.__class__.__name__}] About to create CSV_to_JSON_TransformerBuilder --> input_file: {input_file}, output_file: {output_file}, overwrite: {overwrite == True}.")
+            f"[{self.__class__.__name__}] About to create CSV_to_JSON_TransformerBuilder --> input_file: {input_file}, output_file: {output_file}")
         self._input_file = input_file
         self._output_file = output_file
-        if overwrite:
-            self._overwrite = overwrite
-        else:
-            self._overwrite = False
 
     def getInputFile(self):
         """
@@ -219,15 +188,6 @@ class TransformerBuilder(ABC):
         """
         logging.info(f"[{self.__class__.__name__}.getOutputFile] output_file: {self._output_file}")
         return self._output_file
-
-    def getOverwrite(self):
-        """
-        Getter for attribute _overwrite.
-
-        Returns true if overwriting output file is allowed, false in other case.
-        """
-        logging.info(f"[{self.__class__.__name__}.getOverwrite] overwrite: {self._overwrite}")
-        return self._overwrite
 
     @abstractmethod
     def build(self):
@@ -248,7 +208,7 @@ class CSV_to_JSON_TransformerBuilder (TransformerBuilder):
         Returns a single CSV_to_JSON_Transformer for the given file.
         """
         logging.debug(f"[{self.__class__.__name__}.build] About to create CSV_to_JSON_Transformer.")
-        return CSV_to_JSON_Transformer(self._input_file, self._output_file, self._overwrite)
+        return CSV_to_JSON_Transformer(self._input_file, self._output_file)
 
 
 class Delimiter_TransformerBuilder (TransformerBuilder):
@@ -256,7 +216,7 @@ class Delimiter_TransformerBuilder (TransformerBuilder):
     This class is used to build Delimiter_Transformer(s).
     """
 
-    def __init__(self, input_file, output_file="_temp", overwrite=False, delimiter=","):
+    def __init__(self, input_file, output_file="_temp", delimiter=","):
         """
         Basic constructor
 
@@ -266,19 +226,13 @@ class Delimiter_TransformerBuilder (TransformerBuilder):
             the full path for the file where the data is serialized.
         _output_file : str
             the full path for the file where the data, when transformed, will be serialized.
-        _overwrite : boolean
-            if true, the output file can be overwrited with new data.
         _delimiter : str
             this string contains the char(s) used to separate the values inside the CSV file.
         """
         logging.debug(
-            f"[{self.__class__.__name__}] About to create CSV_to_JSON_TransformerBuilder --> input_file: {input_file}, output_file: {output_file}, overwrite: {overwrite == True}.")
+            f"[{self.__class__.__name__}] About to create CSV_to_JSON_TransformerBuilder --> input_file: {input_file}, output_file: {output_file}.")
         self._input_file = input_file
         self._output_file = f"{input_file[:input_file.rfind('.')]}{output_file}{input_file[input_file.rfind('.'):]}"
-        if overwrite:
-            self._overwrite = overwrite
-        else:
-            self._overwrite = False
         self._delimiter = delimiter
 
     def build(self):
@@ -286,7 +240,7 @@ class Delimiter_TransformerBuilder (TransformerBuilder):
         This method returns a Delimiter_Transformer with the params given to the builder.
         """
         logging.debug(f"[{self.__class__.__name__}.build] About to create Delimiter_TransformerBuilder.")
-        return Delimiter_Transformer(self._input_file, self._output_file, self._overwrite, self._delimiter)
+        return Delimiter_Transformer(self._input_file, self._output_file, self._delimiter)
 
 
 class Transformer_selector:
@@ -294,19 +248,19 @@ class Transformer_selector:
     This class is used to check file extensions (csv, txt, json, xml, etc.) and select the suitable transformer.
     """
 
-    def __init__ (self, input_file_extension, output_file_extension):
+    def __init__ (self, input_file, output_file):
         """
         Basic constructor
 
-         Parameters
+        Parameters
         ----------
-        _input_file_extension : str
-            the extension of the file to be transformed from.
-        _output_file_extension : str
-            the extension of the file to be transformed to.
+        _input_file : str
+            the file to be transformed from.
+        _output_file : str
+            the file to be transformed to.
         """
-        self._input_file_extension = input_file_extension.lower()
-        self._output_file_extension = output_file_extension.lower()
+        self._input_file = input_file[input_file.rfind('.')+1:].lower()
+        self._output_file = output_file[output_file.rfind('.')+1:].lower()
     
     def select(self):
         """
@@ -314,91 +268,216 @@ class Transformer_selector:
 
         Returns a string that represents the required transformer. It should be like %FORMAT%_to_%FORMAT%, ej.: csv_to_json or json_to_xml
         """
-        logging.debug(f"[{self.__class__.__name__}.select] About to select transformer for {self._input_file_extension} to {self._output_file_extension} files.")
-        if self._input_file_extension == "csv":
-            if self._output_file_extension == "json":
+        logging.debug(f"[{self.__class__.__name__}.select] About to select transformer for {self._input_file} to {self._output_file} files.")
+        if self._input_file == "csv":
+            if self._output_file == "json":
                 transformer = "csv_to_json"
                 logging.debug(f"[{self.__class__.__name__}.select] The selected transformer is {transformer}.")
                 return transformer
         logging.error(f"[{self.__class__.__name__}.select] There is no transformer for this files.")
         return "unknown"
 
-def main():
-    # About to parse params
-    parser = argparse.ArgumentParser(description="This commands allows to easily transforms data from one format files to another. The allowed transformations include: CSV --> JSON.")
-    parser.add_argument("input_file", help="the file or directory where the data is stored.")
-    parser.add_argument("output_file", help="the file or directory where the data will be stored after transforming it.")
-    parser.add_argument("-b", "--batch", help="use this param if wanna transform all files inside a directory to the choosen format (csv, txt, json, etc.).")
-    parser.add_argument("-d", "--delimiter", help="use this param if wanna set a delimiter")
-    parser.add_argument("-o", "--overwrite", action="store_true", help="use this param if wanna allow file overwrite.")
-    parser.add_argument("-v", "--verbose", action="store_true", help="enables detailed logs.")
-    args = parser.parse_args()
 
-    # About to set logger
-    _logging_level = None
-    if args.verbose:
-        _logging_level=logging.DEBUG
-    else:
-        _logging_level=logging.WARN
-    logging.basicConfig(format="%(asctime)s [%(levelname)-5.5s] %(message)s", level=_logging_level)
+class Main:
 
-    logging.debug(f"[Main] Is batch mode enabled?")
-    files = {}
-    if args.batch:
-        if os.path.isdir(args.input_file) and os.path.isdir(args.output_file):
-            logging.debug(f"[Main] Batch mode enabled and both dirs are valid.")
-            for file in os.listdir(args.input_file):
-                from_file = f"{args.input_file}\\{file}"
-                to_file = f"{args.output_file}\\{file[:file.rfind('.')]}.{args.batch}"
-                if not(args.overwrite) and os.path.isfile(to_file):
-                    logging.warning(f"[Main] Overwrite mode is not enabled and {to_file} already exists.")
-                    continue
-                files[from_file] = to_file
-                logging.debug(f"[Main] File {from_file} should be transformed into {files[from_file]} file.")
-        else:
-            logging.critical(f"[Main] Batch mode is enabled but input or output directories do not exist or are not directories.")
-            exit(-1)
-    else: # Batch mode is not enabled
-        if os.path.isfile(args.input_file):
-            logging.debug(f"[Main] Single file mode enabled and input file exists.")
-            files[args.input_file] = args.output_file
-            logging.debug(f"[Main] File {args.input_file} should be transformed into {files[args.input_file]} file.")
-        else:
-            logging.critical(f"[Main] Single file mode is enabled but input file does not exist or is not a file.")
-            exit(-1)
+    def get_args(self):
+        """
+        Sets command line args.
+        """
+        parser = argparse.ArgumentParser(
+            description = "This commands allows to easily transforms data from one format files to another. The allowed transformations include: CSV --> JSON.",
+            formatter_class= argparse.ArgumentDefaultsHelpFormatter
+        )
+        parser.add_argument(
+            "input_file",
+            help="the file or directory where the data is stored."
+        )
+        parser.add_argument(
+            "output_file",
+            help="the file or directory where the data will be stored after transforming it."
+        )
+        parser.add_argument(
+            "-b", "--batch",
+            help="use this param if wanna transform all files inside a directory to the choosen format (csv, txt, json, etc.)."
+        )
+        parser.add_argument(
+            "-d", "--delimiter",
+            help="use this param if wanna set a delimiter"
+        )
+        parser.add_argument(
+            "-o", "--overwrite",
+            action="store_true",
+            help="use this param if wanna allow file overwrite."
+        )
+        parser.add_argument(
+            "-v", "--verbose",
+            action="store_true",
+            help="enables detailed logs."
+        )
+        args = parser.parse_args()
+        return args
     
-    logging.debug(f"[Main] About to process file(s).")
-    for file in files:
-        logging.debug(f"[Main] About to transform file {file} into {files[file]}.")
-        input_file_extension = file[file.rfind(".")+1:]
-        output_file_extension = (files[file])[files[file].rfind(".")+1:]
+    def get_batch_files(self, input_path, output_path, format):
+        """
+        Creates a dictionary that contais every input file related to its output file as k, v.
 
-        logging.debug(f"[Main] About to select transformer ({input_file_extension} --> {output_file_extension}).")
-        selector = Transformer_selector(input_file_extension, output_file_extension)
-        transformer_selected = selector.select()
-        logging.debug(f"[Main] The selected transformer is {transformer_selected}.")
+        Parameters
+        ----------
+        input_path : str
+            the full directory path where files are placed.
+        output_path : str
+            the full directory path where files will be placed when transformed.
+        format : str
+            the extension that files will have when transformed.
 
-        logging.debug(f"[Main] About to build transformer_builder.")
-        transformer_builder = None
-        if transformer_selected == "csv_to_json":
-            if args.delimiter:
-                logging.debug(f"[Main] About to process delimiter.")
-                transformer_builder = Delimiter_TransformerBuilder(file, "_temp", args.overwrite, args.delimiter)
-                delimiter_transformer = transformer_builder.build()
-                delimiter_transformer.transform()
-                logging.debug(f"[Main] About to build transformer_builder.")
-                transformer_builder = CSV_to_JSON_TransformerBuilder(delimiter_transformer.getOutputFile(), files[file], args.overwrite)
-            else:
-                logging.debug(f"[Main] About to build transformer_builder.")
-                transformer_builder = CSV_to_JSON_TransformerBuilder(file, files[file], args.overwrite)
+        Returns a dictionary that contains every file in the input path related to the output file as k, v.
+        """
+        files = {}
+        for file in self.get_files_in_directory(input_path):
+            logging.debug(f"[Main] About to get output file for {file}.")
+            from_file = f"{input_path}/{file}"
+            to_file = self.get_output_file_from_input_file(output_path, file, format)
+            files[from_file] = to_file
+        return files
+    
+    def get_files_in_directory(self, path):
+        """
+        Gets all filenames inside a directory.
+        """
+        return os.listdir(path)
+    
+    def get_output_file_from_input_file(self, path, file, format):
+        """
+        Creates a full filepath with the given path, filename and extension.
+
+        Parameters
+        ----------
+        path : str
+            the full directory path to validate.
+        file : str
+            the filename.
+        format : str
+            the file extension.
+
+        Returns the full filepath (path/file.extension)
+        """
+        filename = file[:file.rfind('.')]
+        return f"{path}/{filename}.{format}"
+    
+    def set_logging(self, verbose=False):
+        """
+        Sets the basic config for logging, including verbose mode.
+        """
+        if verbose:
+            logging.basicConfig(format="%(asctime)s [%(levelname)-5.5s] %(message)s", level=logging.DEBUG)
         else:
-            logging.warning(f"[Main] There is no transformer available.")
-            continue
-            
-        logging.debug(f"[Main] About to build transformer.")
-        transformer = transformer_builder.build()
-        transformer.transform()
+            logging.basicConfig(format="%(asctime)s [%(levelname)-5.5s] %(message)s", level=logging.WARN)
+
+    def validate_directory_path(self, path):
+        """
+        Check if the directory path exists and is a directory.
+
+        Parameters
+        ----------
+        path : str
+            the full directory path to validate.
+
+        Returns the path if it's valid. It raises an error if not.
+        """
+        if not os.path.exists(path):
+            raise argparse.ArgumentTypeError(f"The directory {path} does not exist.")
+        if not os.path.isdir(path):
+            raise argparse.ArgumentTypeError(f"{path} is not a directory.")
+        return path
+
+    def validate_file_path(self, path):
+        """
+        Check if the file path exists and is a file.
+
+        Parameters
+        ----------
+        path : str
+            the full file path to validate.
+
+        Returns the path if it's valid. It raises an error if not.
+        """
+        if not os.path.exists(path):
+            raise argparse.ArgumentTypeError(f"The file {path} does not exists.")
+        if not os.path.isfile(path):
+            raise argparse.ArgumentTypeError(f"{path} is not a file.")
+        return path
+    
+    def validate_file_path_not_exists(self, path):
+        """
+        Check if the file path does NOT exists. This is used when overwrite mode is disabled.
+
+        Parameters
+        ----------
+        path : str
+            the full file path to validate.
+
+        Returns the path if it's valid (the file does NOT exists). It raises an error if not.
+        """
+        if os.path.exists(path):
+            raise argparse.ArgumentTypeError(f"The file {path} exists.")
+        return path
+
+    def run(self):
+        """
+        The main.
+        """
+        args = self.get_args()
+        self.set_logging(args.verbose)
+
+        files = {}
+        logging.debug(f"[Main] About to list all files.")
+        if args.batch:
+            logging.debug(f"[Main] Batch mode is enabled.")
+            try:
+                self.validate_directory_path(args.input_file)
+                self.validate_directory_path(args.output_file)
+            except argparse.ArgumentTypeError:
+                logging.error(f"[Main] Input or output directory does not exists.")
+                exit(-1)
+            files = self.get_batch_files(args.input_file, args.output_file, args.batch)
+        else: # Batch mode is disabled
+            logging.debug(f"[Main] Single file mode is enabled.")
+            try:
+                self.validate_file_path(args.input_file)
+            except argparse.ArgumentTypeError:
+                logging.error(f"[Main] Input file {args.input_file} does not exists.")
+                exit(-1)
+            files[args.input_file] = args.output_file
+        logging.debug(f"[Main] All file(s) have been listed.")
+
+        for file in files:
+            print(f"{file} --> {files[file]}")
+            if (not args.overwrite):
+                try:
+                    self.validate_file_path_not_exists(files[file])
+                except argparse.ArgumentTypeError:
+                    logging.warning(f"[Main] Cannot overwrite file {files[file]}.")
+                    continue
+            logging.debug(f"[Main] About to select Transformer.")
+            transformer_selector = Transformer_selector(file, files[file])
+            transformer_selected = transformer_selector.select()
+            if transformer_selected == "csv_to_json":
+                if args.delimiter:
+                    logging.debug(f"[Main] There is a delimiter to process before CSV_to_JSON_Transformer.")
+                    builder = Delimiter_TransformerBuilder(file, "_temp", args.delimiter)
+                    transformer = builder.build()
+                    transformer.transform()
+                    builder = CSV_to_JSON_TransformerBuilder(transformer.getOutputFile(), files[file])
+                    transformer = builder.build()
+                    transformer.transform()
+                else: # There is no delimiter to process.
+                    builder = CSV_to_JSON_TransformerBuilder(file, files[file])
+                    transformer = builder.build()
+                    transformer.transform()
+            else: # There is no transformer available for this.
+                logging.warning(f"[Main] Oh no...!!! There is no transformer for this {transformer_selected}.")
 
 
 if __name__ == "__main__":
-    main()
+    app = Main()
+    app.run()
