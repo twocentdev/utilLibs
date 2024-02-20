@@ -282,7 +282,7 @@ class Main:
 
     def get_args(self):
         """
-        TODO
+        Sets command line args.
         """
         parser = argparse.ArgumentParser(
             description = "This commands allows to easily transforms data from one format files to another. The allowed transformations include: CSV --> JSON.",
@@ -342,11 +342,25 @@ class Main:
     
     def get_files_in_directory(self, path):
         """
-        TODO
+        Gets all filenames inside a directory.
         """
         return os.listdir(path)
     
     def get_output_file_from_input_file(self, path, file, format):
+        """
+        Creates a full filepath with the given path, filename and extension.
+
+        Parameters
+        ----------
+        path : str
+            the full directory path to validate.
+        file : str
+            the filename.
+        format : str
+            the file extension.
+
+        Returns the full filepath (path/file.extension)
+        """
         filename = file[:file.rfind('.')]
         return f"{path}/{filename}.{format}"
     
@@ -410,7 +424,7 @@ class Main:
 
     def run(self):
         """
-        TODO
+        The main.
         """
         args = self.get_args()
         self.set_logging(args.verbose)
